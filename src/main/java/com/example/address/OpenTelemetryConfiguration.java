@@ -12,22 +12,22 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 public class OpenTelemetryConfiguration {
 
-	static OpenTelemetry initOpenTelemetry(String jaegerHost, int jaegerPort) {
+	@Bean
+	OpenTelemetry openTelemetry() {
 
 		Resource serviceNameResource =
 				Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "otel-jaeger-example"));
-
-		// Create a channel towards Jaeger end point    
-		ManagedChannel jaegerChannel = ManagedChannelBuilder.forAddress(jaegerHost, jaegerPort).usePlaintext().build();
 
 		// Export traces to Jaeger
 		JaegerGrpcSpanExporter jaegerExporter =
 				JaegerGrpcSpanExporter.builder()
 				.setEndpoint("http://localhost:14250")
-				.setChannel(jaegerChannel)
 				.setTimeout(30, TimeUnit.SECONDS)
 				.build();
 
@@ -37,13 +37,7 @@ public class OpenTelemetryConfiguration {
 				.setResource(Resource.getDefault().merge(serviceNameResource))
 				.build();
 
-		OpenTelemetrySdk openTelemetry =
-				OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build();
-
-		// it's always a good idea to shut down the SDK cleanly at JVM exit.
-		Runtime.getRuntime().addShutdownHook(new Thread(tracerProvider::close));
-
-		return openTelemetry;
+		return OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build();
 	}
 
 }

@@ -1,5 +1,6 @@
 package com.example.address.controllers;
 
+import io.opentelemetry.api.OpenTelemetry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,15 +17,20 @@ import io.opentelemetry.api.trace.Tracer;
 
 @RestController
 public class AddressController {
+
+	private final Tracer tracer;
 	
 	@Autowired
 	AddressService addressService;
-	
-	private static final Tracer TRACER = GlobalOpenTelemetry.getTracer("com.example.address.OpenTelemetryConfiguration");
-	
-	  @GetMapping("/address/{userId}") 
+
+	@Autowired
+	public AddressController(OpenTelemetry openTelemetry) {
+		this.tracer = openTelemetry.getTracer("app");
+	}
+
+	@GetMapping("/address/{userId}")
 	  public Address getAddress(@PathVariable long userId) { 
-		  Span span = TRACER.spanBuilder("userSpan").startSpan();
+		  Span span = tracer.spanBuilder("userSpan").startSpan();
 		  Address address = addressService.getAddress(userId); 
 		  span.end(); 
 		  return address;
